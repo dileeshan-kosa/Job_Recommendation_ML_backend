@@ -2,6 +2,8 @@ const userprofileTable = require("../models/userCvDetailsModel");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const sw = require("stopword"); //
+const path = require("path");
+const { exec } = require("child_process");
 
 const router = require("../routes");
 
@@ -185,8 +187,6 @@ const manageUserProfileDetails = {
         ].filter(Boolean); // remove nulls
         // .join("\n");
       } else if (extractedText) {
-        // If DB profile data is missing, fallback to extracted text
-        // profileDetailsText = extractedText.trim();
       }
 
       // 1. Build raw profile details array
@@ -245,7 +245,7 @@ const manageUserProfileDetails = {
       // remove stopwords
       function removeStopwords(text) {
         const words = text.split(" ");
-        const filtered = sw.removeStopwords(words); 
+        const filtered = sw.removeStopwords(words);
         return filtered.join(" ");
       }
 
@@ -268,19 +268,89 @@ const manageUserProfileDetails = {
         user_profiles_cleaned = [];
       }
 
-      // 3. Create cleaned output as single array item
-      // const cleanedText = cleanText(profileDetailsArray.join(" "));
-      // const user_profiles_cleaned = [removeStopwords(cleanedText)];
-
       // Save to DB
       profile.user_profiles_cleaned = user_profiles_cleaned;
       await profile.save();
 
-      res.status(200).json({
-        message: "User profile retrieved successfully",
-        profileDetails: profileDetailsText,
-        user_profiles_cleaned,
-        // cvText: extractedText,
+      // === Export to CSV ===
+      const outputPath = path.join(
+        __dirname,
+        "../exports/user_profiles_cleaned.csv"
+      );
+      const csvLine = `${profile._id},"${user_profiles_cleaned.join(" ")}"\n`;
+      if (!fs.existsSync(outputPath)) {
+        fs.writeFileSync(outputPath, "id,user_text_clean\n");
+      }
+      fs.appendFileSync(outputPath, csvLine, "utf8");
+
+      // === Run SBERT Python Script ===
+      const { spawn } = require("child_process");
+      const sbertScriptPath = path.join(
+        __dirname,
+        "../python/generate_embeddings.py"
+      );
+
+      // Use "python" not "python3" on Windows unless python3 is configured
+      const sbertProcess = spawn("python", [sbertScriptPath]);
+      console.log(
+        "Running xgboost_pipeline.py for user ID:",
+        profile._id.toString()
+      );
+
+      let sbertOutput = "";
+      let sbertError = "";
+
+      sbertProcess.stdout.on(
+        "data",
+        (data) => (sbertOutput += data.toString())
+      );
+      sbertProcess.stderr.on("data", (data) => (sbertError += data.toString()));
+
+      sbertProcess.on("close", (code) => {
+        if (code !== 0) {
+          return res.status(500).json({
+            message: "SBERT embedding generation failed.",
+            error: sbertError,
+          });
+        }
+        // === Step 2: After SBERT, run xgboost_pipeline.py ===
+        const xgbScriptPath = path.join(
+          __dirname,
+          "../python/xgboost_pipeline.py"
+        );
+
+        // ✅ FIXED: Now we pass user ID
+        const xgbProcess = spawn("python", [
+          xgbScriptPath,
+          profile._id.toString(),
+        ]);
+        console.log(
+          "Running xgboost_pipeline.py for user ID:",
+          profile._id.toString()
+        );
+
+        let xgbOutput = "";
+        let xgbError = "";
+
+        xgbProcess.stdout.on("data", (data) => (xgbOutput += data.toString()));
+        xgbProcess.stderr.on("data", (data) => (xgbError += data.toString()));
+
+        xgbProcess.on("close", (xgbCode) => {
+          if (xgbCode !== 0) {
+            return res.status(500).json({
+              message: "XGBoost pipeline failed.",
+              error: xgbError,
+            });
+          }
+
+          return res.status(200).json({
+            message:
+              "Profile cleaned, embeddings generated, and recommendations ready.",
+            // cleanedText,
+            sbertOutput: sbertOutput.trim(),
+            xgboostOutput: xgbOutput.trim(),
+          });
+        });
       });
     } catch (error) {
       console.error("Error fetching user profile:", error);

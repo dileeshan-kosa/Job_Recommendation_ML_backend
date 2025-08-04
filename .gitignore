@@ -1,32 +1,55 @@
-# Node.js dependencies
 node_modules/
-
-# Environment variables
 .env
+npm-debug.log*
+package-lock.json
 
-# Logs
+# === Logs ===
 logs/
 *.log
-npm-debug.log*
 
-# OS files
+# === OS files ===
 .DS_Store
 Thumbs.db
 
-# Editor settings
+# === Editor settings ===
 .vscode/
 .idea/
 
-# Build files
+# === Build output ===
 dist/
 build/
 
-# Coverage reports
+# === Code coverage ===
 coverage/
 
-# Uploaded files or temporary data
+# === Uploaded files or temporary data ===
 uploads/
 *.tmp
 
-# MongoDB dump files
+# === MongoDB dump files ===
 dump/
+
+# === Python virtual environment ===
+venv/
+.env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# === Jupyter notebooks checkpoints (if used) ===
+.ipynb_checkpoints/
+
+# === Python model/data files ===
+*.npy
+*.joblib
+*.pkl
+
+# === Your project-specific exports ===
+/exports/*.csv
+/exports/*.npy
+
+# === Temporary or debug scripts ===
+*.bak
+*.old
+*.swp

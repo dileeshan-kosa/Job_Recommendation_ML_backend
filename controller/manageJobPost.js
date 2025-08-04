@@ -2,6 +2,8 @@ const jobpostTable = require("../models/jobPost_model");
 
 const router = require("../routes");
 const sw = require("stopword");
+const path = require("path");
+const fs = require("fs");
 
 // Utility function to clean text
 function cleanText(text) {
@@ -47,62 +49,9 @@ const manageJobPost = {
       });
     }
   },
-
-  //   get job post data
-  // getjobpostdetails: async (req, res) => {
-  //   try {
-  //     let jobposttables = await jobpostTable.find();
-
-  //     // Format each job post into readable strings
-  //     const formattedJobPosts = jobposttables.map((job) => {
-  //       return [
-  //         `jobrole: ${job.jobroles || ""}`,
-  //         `company: ${job.company || ""}`,
-  //         `category: ${job.category || ""}`,
-  //         `location: ${job.location || ""}`,
-  //         `jobdescription: ${job.jobdescription || ""}`,
-  //       ];
-  //     });
-
-  //     // console.log("All jobpost data Fetched");
-  //     // res.send(jobposttables);
-  //     // console.log("Job Post Data", jobposttables);
-
-  //     res.status(200).json({
-  //       message: "Job posts retrieved successfully",
-  //       jobPostsFormatted: formattedJobPosts,
-  //       // jobPostsRaw: jobposttables, // include original raw data too (optional)
-  //     });
-
-  //   } catch (err) {
-  //     console.log(err);
-  //     res.status(400).json({
-  //       message: err.message || err,
-  //       error: true,
-  //       success: false,
-  //     });
-  //   }
-  // },
   getjobpostdetails: async (req, res) => {
     try {
       const jobposttables = await jobpostTable.find();
-
-      // const formattedJobPosts = jobposttables.map((job) => {
-      //   const combinedText = [
-      //     job.jobroles,
-      //     job.company,
-      //     job.category,
-      //     job.location,
-      //     job.jobdescription,
-      //   ]
-      //     .filter(Boolean) // Remove null/undefined
-      //     .join(" ");
-
-      //   const cleaned = cleanText(combinedText);
-      //   const noStopwords = removeStopwords(cleaned);
-
-      //   return noStopwords;
-      // });
 
       const formattedJobPosts = await Promise.all(
         jobposttables.map(async (job) => {
@@ -119,14 +68,37 @@ const manageJobPost = {
           const cleaned = cleanText(combinedText);
           const noStopwords = removeStopwords(cleaned);
 
-          // Update the current job post document with cleaned text
           await jobpostTable.findByIdAndUpdate(job._id, {
             job_text_clean: noStopwords,
           });
 
-          return noStopwords;
+          return {
+            _id: job._id,
+            jobroles: job.jobroles || "",
+            company: job.company || "",
+            category: job.category || "",
+            location: job.location || "",
+            jobdescription: job.jobdescription || "",
+            job_text_clean: noStopwords,
+          };
         })
       );
+
+      // Step 2: Export to CSV
+      const csvHeader =
+        "id,jobroles,company,category,location,jobdescription,job_text_clean\n";
+
+      const csvRows = formattedJobPosts.map((row) => {
+        return `${row._id},"${row.jobroles}","${row.company}","${row.category}","${row.location}","${row.jobdescription}","${row.job_text_clean}"`;
+      });
+
+      const csvContent = csvHeader + csvRows.join("\n");
+
+      const outputPath = path.join(
+        __dirname,
+        "../exports/job_listings_cleaned.csv"
+      );
+      fs.writeFileSync(outputPath, csvContent, "utf8");
 
       res.status(200).json({
         message: "Job posts retrieved successfully",
