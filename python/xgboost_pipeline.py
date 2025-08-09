@@ -87,7 +87,7 @@ predicted_category = label_encoder.inverse_transform(user_prediction)[0]
 
 # === 13. Recommend Top 5 Jobs Closest to This User ===
 similarities = cosine_similarity(user_embeddings[user_index].reshape(1, -1), job_embeddings)[0]
-top_indices = similarities.argsort()[-1:][::-1]
+top_indices = similarities.argsort()[-5:][::-1]
 top_jobs = job_df.iloc[top_indices]
 
 # === 14. Output results ===
