@@ -2,8 +2,18 @@ const express = require("express");
 const manageJobPost = require("../controller/manageJobPost");
 const manageUserProfileDetails = require("../controller/manageUserProfileDetails");
 const upload = require("../middleware/upload");
+const UserSignUpController = require("../controller/userSignUp");
+const userSignInController = require("../controller/userSignIn");
+const userLogout = require("../controller/userLogout");
 
 const router = express.Router();
+
+// User register an Login
+router.post("/signup", UserSignUpController);
+router.post("/signin", userSignInController);
+
+//log out User
+router.get("/userLogout", userLogout);
 
 // jobpost
 router.post("/add-jobpost", manageJobPost.createJobpost);

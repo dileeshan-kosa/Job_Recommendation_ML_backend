@@ -1,6 +1,14 @@
 const mongoose = require("mongoose");
 
 const userProfileSchema = new mongoose.Schema({
+  name: String,
+  email: {
+    type: String,
+    unique: true,
+    required: true,
+  },
+  password: String,
+
   fileName: { type: String, default: null },
   fileType: { type: String, default: null },
   filePath: { type: String, default: null },
