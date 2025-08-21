@@ -41,6 +41,9 @@ const manageJobPost = {
       res.status(201).json({
         message: "Job post created successfully.",
         data: saveJobPost,
+        success: true,
+        error: false,
+        
       });
     } catch (error) {
       console.log("error", error);
