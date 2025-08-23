@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.metrics.pairwise import cosine_similarity
+import pickle
 
 # === 0. Read User ID passed from Node.js ===
 if len(sys.argv) < 2:
@@ -75,23 +76,12 @@ print(f"Model Accuracy on Test Set: {accuracy * 100:.2f}%")
 # print("Classification Report:")
 # print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
 
-# === 11. Locate index of the logged-in user ===
-try:
-    user_index = user_df[user_df['id'] == user_id].index[0]
-except IndexError:
-    raise ValueError(f"User ID '{user_id}' not found in user_profiles_cleaned.csv")
+# === 11. Save the trained XGBoost model ===
+xgb_model.save_model('./models/xgb_model.json')
 
-# === 12. Predict category for the given user ===
-user_prediction = xgb_model.predict(user_embeddings[user_index].reshape(1, -1))
-predicted_category = label_encoder.inverse_transform(user_prediction)[0]
+# === 12. Save the LabelEncoder ===
+with open('./models/label_encoder.pkl', 'wb') as f:
+    pickle.dump(label_encoder, f)
 
-# === 13. Recommend Top 5 Jobs Closest to This User ===
-similarities = cosine_similarity(user_embeddings[user_index].reshape(1, -1), job_embeddings)[0]
-top_indices = similarities.argsort()[-5:][::-1]
-top_jobs = job_df.iloc[top_indices]
+print("Model and label encoder saved successfully.")
 
-# === 14. Output results ===
-print("Predicted Job Category:", predicted_category)
-print("\nTop 5 Recommended Jobs:")
-for i, row in top_jobs.iterrows():
-    print(f"- {row['jobroles']} at {row['company']} ({row['category']})")

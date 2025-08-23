@@ -19,9 +19,12 @@ router.get("/userLogout", userLogout);
 router.post("/add-jobpost", manageJobPost.createJobpost);
 router.get("/get-jobpost", manageJobPost.getjobpostdetails);
 
+// get user data in ID
+router.get("/user-profile/:id", manageUserProfileDetails.getUserDetails);
+
 // user profile Details
 router.post(
-  "/add-userprofile",
+  "/add-userprofile/:id",
   upload.single("cv_files"),
   manageUserProfileDetails.createCvData
 );

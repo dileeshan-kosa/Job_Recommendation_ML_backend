@@ -11,12 +11,13 @@ const manageUserProfileDetails = {
   // add cv
   createCvData: async (req, res) => {
     try {
+      const { id } = req.params;
       const file = req.file;
       const {
         fullName,
         dateOfBirth,
         headline,
-        email,
+        // email,
         website,
         phone,
         location,
@@ -41,7 +42,7 @@ const manageUserProfileDetails = {
         fullName: fullName || null,
         dateOfBirth: dateOfBirth || null,
         headline: headline || null,
-        email: email || null,
+        // email: email,
         website: website || null,
         phone: phone || null,
         headline: headline || null,
@@ -58,18 +59,63 @@ const manageUserProfileDetails = {
         summary: summary || null,
       };
 
-      const newUserProfileDetails = new userprofileTable(userData);
-      const saveUserProfileDetails = await newUserProfileDetails.save();
+      // Update the existing user profile instead of creating new
+      const updatedProfile = await userprofileTable.findByIdAndUpdate(
+        id,
+        { $set: userData },
+        { new: true } // return updated document
+      );
 
-      res.status(201).json({
-        message: "CV Add Successfully",
-        data: saveUserProfileDetails,
+      if (!updatedProfile) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.status(200).json({
+        message: "CV updated successfully",
+        data: updatedProfile,
       });
+
+      // const newUserProfileDetails = new userprofileTable(userData);
+      // const saveUserProfileDetails = await newUserProfileDetails.save();
+
+      // Update existing user by id
+      // const updatedUser = await userprofileTable.findByIdAndUpdate(
+      //   id,
+      //   { $set: updateData },
+      //   { new: true } // return updated document
+      // );
+
+      // if (!updatedUser) {
+      //   return res.status(404).json({ message: "User not found." });
+      // }
+
+      // res.status(201).json({
+      //   message: "CV Add Successfully",
+      //   data: saveUserProfileDetails,
+      // });
     } catch (error) {
       console.log("error", error);
       return res.status(500).json({
         message: "CV not added.",
       });
+    }
+  },
+
+  //get data for verify the user
+  getUserDetails: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const userprofile = await userprofileTable.findById(id);
+
+      if (!userprofile) {
+        return res.status(404).json({ message: "User profile not found." });
+      }
+
+      res.status(200).json(userprofile);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Error retrieving user profile" });
     }
   },
 
@@ -343,12 +389,18 @@ const manageUserProfileDetails = {
             });
           }
 
+          // return res.status(200).json({
+          //   message:
+          //     "Profile cleaned, embeddings generated, and recommendations ready.",
+          //   // cleanedText,
+          //   sbertOutput: sbertOutput.trim(),
+          //   xgboostOutput: xgbOutput.trim(),
+          // });
+
           return res.status(200).json({
             message:
-              "Profile cleaned, embeddings generated, and recommendations ready.",
-            // cleanedText,
-            sbertOutput: sbertOutput.trim(),
-            xgboostOutput: xgbOutput.trim(),
+              "Profile cleaned, embeddings generated, and model trained.",
+            userId: profile._id.toString(),
           });
         });
       });
@@ -357,6 +409,11 @@ const manageUserProfileDetails = {
       res.status(500).json({ message: "Error retrieving user profile" });
     }
   },
+
+  // New API call get values
+  // getPredictValues: async (req, res) => {
+
+  // }
 };
 
 module.exports = manageUserProfileDetails;
