@@ -8,6 +8,8 @@ from xgboost import XGBClassifier
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
+import warnings
+warnings.filterwarnings("ignore")
 
 # === 0. Read User ID passed from Node.js ===
 if len(sys.argv) < 2:
@@ -76,12 +78,13 @@ print(f"Model Accuracy on Test Set: {accuracy * 100:.2f}%")
 # print("Classification Report:")
 # print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
 
-# === 11. Save the trained XGBoost model ===
+# === step 11. Save the trained XGBoost model ===
 xgb_model.save_model('./models/xgb_model.json')
 
 # === 12. Save the LabelEncoder ===
 with open('./models/label_encoder.pkl', 'wb') as f:
     pickle.dump(label_encoder, f)
 
-print("Model and label encoder saved successfully.")
+print("Model and label encoder saved successfully.", flush=True)
+
 

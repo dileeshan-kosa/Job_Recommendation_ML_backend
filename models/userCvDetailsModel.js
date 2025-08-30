@@ -17,7 +17,7 @@ const userProfileSchema = new mongoose.Schema({
   fullName: { type: String, default: null },
   dateOfBirth: { type: String, default: null },
   headline: { type: String, default: null },
-  email: { type: String, default: null },
+  email_1: { type: String, default: null },
   website: { type: String, default: null },
   phone: { type: String, default: null },
   location: { type: String, default: null },

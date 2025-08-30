@@ -17,7 +17,7 @@ const manageUserProfileDetails = {
         fullName,
         dateOfBirth,
         headline,
-        // email,
+        email,
         website,
         phone,
         location,
@@ -42,7 +42,7 @@ const manageUserProfileDetails = {
         fullName: fullName || null,
         dateOfBirth: dateOfBirth || null,
         headline: headline || null,
-        // email: email,
+        email_1: email,
         website: website || null,
         phone: phone || null,
         headline: headline || null,
@@ -155,7 +155,7 @@ const manageUserProfileDetails = {
         profile.experience ||
         profile.education ||
         profile.skills ||
-        // profile.skills ||
+        profile.skills ||
         profile.certifications ||
         profile.interests ||
         profile.projects ||
@@ -166,7 +166,7 @@ const manageUserProfileDetails = {
         profileDetailsText = [
           `name: ${profile.fullName || ""}`,
           `headline: ${profile.headline || ""}`,
-          `email: ${profile.email || ""}`,
+          `email: ${profile.email_1 || ""}`,
           `location: ${profile.location || ""}`,
           `profiles: ${
             Array.isArray(profile.profiles) ? profile.profiles.join(" | ") : ""
@@ -239,7 +239,7 @@ const manageUserProfileDetails = {
       const profileDetailsArray = [
         profile.fullName,
         profile.headline,
-        profile.email,
+        profile.email_1,
         profile.location,
         Array.isArray(profile.profiles) ? profile.profiles.join(" ") : "",
         Array.isArray(profile.experience)
@@ -317,6 +317,7 @@ const manageUserProfileDetails = {
       // Save to DB
       profile.user_profiles_cleaned = user_profiles_cleaned;
       await profile.save();
+      console.log("Data save");
 
       // === Export to CSV ===
       const outputPath = path.join(
@@ -366,10 +367,13 @@ const manageUserProfileDetails = {
         );
 
         // ✅ FIXED: Now we pass user ID
-        const xgbProcess = spawn("python", [
-          xgbScriptPath,
-          profile._id.toString(),
-        ]);
+        const xgbProcess = spawn(
+          "python",
+          [xgbScriptPath, profile._id.toString()],
+          {
+            stdio: ["pipe", "pipe", "pipe"], // default
+          }
+        );
         console.log(
           "Running xgboost_pipeline.py for user ID:",
           profile._id.toString()
@@ -378,8 +382,18 @@ const manageUserProfileDetails = {
         let xgbOutput = "";
         let xgbError = "";
 
-        xgbProcess.stdout.on("data", (data) => (xgbOutput += data.toString()));
-        xgbProcess.stderr.on("data", (data) => (xgbError += data.toString()));
+        // xgbProcess.stdout.on("data", (data) => (xgbOutput += data.toString()));
+        // xgbProcess.stderr.on("data", (data) => (xgbError += data.toString()));
+
+        xgbProcess.stdout.on("data", (data) => {
+          console.log("PYTHON STDOUT:", data.toString());
+          xgbOutput += data.toString();
+        });
+
+        xgbProcess.stderr.on("data", (data) => {
+          console.error("PYTHON STDERR:", data.toString());
+          xgbError += data.toString();
+        });
 
         xgbProcess.on("close", (xgbCode) => {
           if (xgbCode !== 0) {
@@ -397,10 +411,14 @@ const manageUserProfileDetails = {
           //   xgboostOutput: xgbOutput.trim(),
           // });
 
+          console.log("dwefwefwef");
+
           return res.status(200).json({
             message:
-              "Profile cleaned, embeddings generated, and model trained.",
+              "Profile processed successfully. You can now see your matching job list.",
             userId: profile._id.toString(),
+            sbertOutput,
+            xgbOutput,
           });
         });
       });
@@ -411,9 +429,13 @@ const manageUserProfileDetails = {
   },
 
   // New API call get values
-  // getPredictValues: async (req, res) => {
-
-  // }
+  getPredictValues: async (req, res) => {
+    try {
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Error retrieving user profile" });
+    }
+  },
 };
 
 module.exports = manageUserProfileDetails;
