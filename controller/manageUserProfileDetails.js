@@ -411,7 +411,7 @@ const manageUserProfileDetails = {
           //   xgboostOutput: xgbOutput.trim(),
           // });
 
-          console.log("dwefwefwef");
+          // console.log("dwefwefwef");
 
           return res.status(200).json({
             message:
