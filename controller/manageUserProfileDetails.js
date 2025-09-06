@@ -436,6 +436,62 @@ const manageUserProfileDetails = {
       res.status(500).json({ message: "Error retrieving user profile" });
     }
   },
+
+  //View Model Output
+  getPredictionDetails: async (req, res) => {
+    try {
+      // console.log("dddd");
+      const { id } = req.params;
+
+      const userprofile = await userprofileTable.findById(id);
+      // console.log("id", userprofile);
+
+      if (!userprofile) {
+        return res.status(404).json({ message: "User profile not found." });
+      }
+
+      // === Step 2: After SBERT, run xgboost_pipeline.py ===
+      const path = require("path");
+      const { spawn } = require("child_process");
+      const aScriptPath = path.join(
+        __dirname,
+        "../python/viewResultbyModel.py"
+      );
+
+      // ✅ FIXED: Now we pass user ID
+      const xgbProcess = spawn("python", [
+        aScriptPath,
+        userprofile._id.toString(),
+      ]);
+      console.log(
+        "Running viewResultbyModel.py for user ID:",
+        userprofile._id.toString()
+      );
+
+      let xgbOutput = "";
+      let xgbError = "";
+
+      xgbProcess.stdout.on("data", (data) => (xgbOutput += data.toString()));
+      xgbProcess.stderr.on("data", (data) => (xgbError += data.toString()));
+
+      xgbProcess.on("close", (xgbCode) => {
+        if (xgbCode !== 0) {
+          return res.status(500).json({
+            message: "XGBoost pipeline failed.",
+            error: xgbError,
+          });
+        }
+
+        return res.status(200).json({
+          message: "✅ Prediction completed successfully.",
+          output: JSON.parse(xgbOutput.trim()),
+        });
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Error retrieving user profile" });
+    }
+  },
 };
 
 module.exports = manageUserProfileDetails;

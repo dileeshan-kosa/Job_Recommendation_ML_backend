@@ -35,4 +35,10 @@ router.get(
   manageUserProfileDetails.getUserProfileDetails
 );
 
+// Read prediction details
+router.get(
+  "/get-prediction-details/:id",
+  manageUserProfileDetails.getPredictionDetails
+);
+
 module.exports = router;
